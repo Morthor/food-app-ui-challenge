@@ -56,11 +56,16 @@ class _HomePageState extends State<HomePage> {
                 RecipeGrid(
                   children: widget.recipeeRepository
                       .getSpecialRecipees()
-                      .map((recipe) => RecipeImage(
-                          recipe: recipe,
-                          onClicked: (recipe, context) =>
-                              navigateToDetail(context, recipe),
-                        )
+                      .map((recipe) {
+                        return Hero(
+                          tag: recipe,
+                          child: RecipeImage(
+                            recipe: recipe,
+                            onClicked: (recipe, context) =>
+                                navigateToDetail(context, recipe),
+                          ),
+                        );
+                      }
                       )
                       .toList(),
                 ),
@@ -118,6 +123,7 @@ class _ChipSearchBarState extends State<ChipSearchBar> {
           decoration: InputDecoration(suffixIcon: Icon(Icons.search)),
           onFieldSubmitted: (value) {
             _selectedWidgets.add(CookChip(
+              key: Key(value),
               text: value,
               onDeleted: () => setState(() {
                 removeChipWithValue(value);
@@ -142,25 +148,61 @@ class _ChipSearchBarState extends State<ChipSearchBar> {
   }
 }
 
-class CookChip extends StatelessWidget {
+class CookChip extends StatefulWidget {
   final String text;
   final VoidCallback onDeleted;
+  final Key key;
 
   CookChip({
     this.text,
     this.onDeleted,
-  });
+    this.key
+  }) : super(key: key);
+
+  @override
+  _CookChipState createState() => _CookChipState();
+}
+
+class _CookChipState extends State<CookChip> with SingleTickerProviderStateMixin {
+  AnimationController _animationController;
+
+  @override
+  void initState() {
+    _animationController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 150),
+    );
+    _animationController.forward();
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Chip(
-      label: Text(text),
-      deleteIcon: Icon(
-        Icons.clear,
-        size: iconSize,
+    return FadeTransition(
+      opacity: _animationController,
+      child: SizeTransition(
+        axis: Axis.horizontal,
+        sizeFactor: _animationController,
+        child: Chip(
+          label: Text(widget.text),
+          deleteIcon: Icon(
+            Icons.clear,
+            size: iconSize,
+          ),
+          onDeleted: onDeleted,
+        ),
       ),
-      onDeleted: onDeleted,
     );
+  }
+
+  void onDeleted(){
+    _animationController.reverse().then((value) => widget.onDeleted());
   }
 }
 
