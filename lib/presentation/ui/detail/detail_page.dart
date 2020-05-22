@@ -235,29 +235,39 @@ class Favorite extends StatefulWidget {
   _FavoriteState createState() => _FavoriteState();
 }
 
-class _FavoriteState extends State<Favorite> with SingleTickerProviderStateMixin {
-  AnimationController _animationController;
+class _FavoriteState extends State<Favorite> with TickerProviderStateMixin {
+  AnimationController _colorAnimationController;
+  AnimationController _sizeAnimationController;
   Animation _heartAnimation;
   Animation _backgroundAnimation;
   bool _favorite = false;
 
   @override
   void initState() {
-    _animationController = AnimationController(
+    _colorAnimationController = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 125)
     );
+
+    _sizeAnimationController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 100),
+      value: 1.0,
+      lowerBound: 1.0,
+      upperBound: 1.75,
+    );
+
     _heartAnimation = ColorTween(
       begin: Colors.black,
       end: Colors.red,
-    ).animate(_animationController)..addListener(() {
+    ).animate(_colorAnimationController)..addListener(() {
       setState(() {});
     });
 
     _backgroundAnimation = ColorTween(
       begin: Colors.white,
       end: Colors.black,
-    ).animate(_animationController)..addListener(() {
+    ).animate(_colorAnimationController)..addListener(() {
       setState(() {});
     });
     super.initState();
@@ -265,7 +275,7 @@ class _FavoriteState extends State<Favorite> with SingleTickerProviderStateMixin
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _colorAnimationController.dispose();
     super.dispose();
   }
 
@@ -276,10 +286,11 @@ class _FavoriteState extends State<Favorite> with SingleTickerProviderStateMixin
       aspectRatio: 1.0,
       child: GestureDetector(
         onTap: (){
-          _favorite
-              ? _animationController.reverse()
-              : _animationController.forward();
-
+          _sizeAnimationController.forward().then((value) {
+            _favorite
+                ? _colorAnimationController.forward()
+                : _colorAnimationController.reverse();
+          }).then((value) => _sizeAnimationController..reverse());
           _favorite = !_favorite;
         },
         child: Container(
@@ -290,8 +301,11 @@ class _FavoriteState extends State<Favorite> with SingleTickerProviderStateMixin
             ),
             border: Border.all()
           ),
-          child: Icon(Icons.favorite,
-            color: _heartAnimation.value,
+          child: ScaleTransition(
+            scale: _sizeAnimationController,
+            child: Icon(Icons.favorite,
+              color: _heartAnimation.value,
+            ),
           ),
         ),
       ),
